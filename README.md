@@ -50,7 +50,9 @@ In Pi:
 
 Login uses `http://127.0.0.1:59653/callback` with a five-minute timeout. If Pi runs on a remote machine, arrange callback port forwarding yourself. Pi manages credentials; log in again when they expire. Sign out with `/logout devin`.
 
-The initial `swe-1-6` entry is a boot seed, not proof of account access. Use the refreshed catalog to select models.
+Successful refreshes persist model metadata, never credentials, in Pi's `<agent-dir>/models-store.json` (normally `~/.pi/agent/models-store.json`). Fresh processes restore this catalog before selecting the startup model, so a Devin default saved with `Ctrl+S` in `/model` survives restarts, including offline startup. Failed refreshes retain the last successful catalog.
+
+Only installations without a cached catalog use the initial `swe-1-6` boot seed, which is not proof of account access. Run `/devin-refresh` once before selecting your first default model; the refreshed catalog remains authoritative.
 
 ### Existing credentials
 

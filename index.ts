@@ -1,18 +1,17 @@
-import type { ExtensionAPI, ProviderModelConfig } from "@earendil-works/pi-coding-agent";
-type ProviderChatModelConfig = Extract<ProviderModelConfig, { type?: "chat" }>;
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { createDevinModelRefresh } from "./src/catalog.js";
 import { DEVIN_DEFAULT_BASE_URL } from "./src/devin.js";
-import { FALLBACK_MODELS, fetchDevinModels } from "./src/discovery.js";
+import { FALLBACK_MODELS } from "./src/discovery.js";
 import { loginDevin, refreshDevin } from "./src/oauth.js";
 import { streamDevin } from "./src/stream.js";
 
 export default function (pi: ExtensionAPI) {
-  let currentModels: ProviderChatModelConfig[] = [...FALLBACK_MODELS];
   pi.registerProvider("devin", {
     name: "Devin Native CLI",
     baseUrl: DEVIN_DEFAULT_BASE_URL,
     api: "devin-native-connect",
     apiKey: "$DEVIN_API_KEY",
-    models: currentModels,
+    models: [...FALLBACK_MODELS],
     oauth: {
       name: "Devin Native CLI",
       isSubscription: true,
@@ -21,17 +20,7 @@ export default function (pi: ExtensionAPI) {
       getApiKey: credentials => credentials.access,
     },
     streamSimple: streamDevin,
-    async refreshModels(context) {
-      if (!context.allowNetwork) return currentModels;
-      const key = context.credential?.type === "oauth" ? context.credential.access
-        : context.credential?.type === "api_key" ? context.credential.key : undefined;
-      const apiKey = key ?? process.env.DEVIN_API_KEY;
-      if (!apiKey) return currentModels;
-      const models = await fetchDevinModels(apiKey, { signal: context.signal });
-      context.signal.throwIfAborted();
-      currentModels = models;
-      return currentModels;
-    },
+    refreshModels: createDevinModelRefresh(),
   });
   pi.registerCommand("devin-refresh", {
     description: "刷新当前 Devin 账号可用的 CLI 模型",
