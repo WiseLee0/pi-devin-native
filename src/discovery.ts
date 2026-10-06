@@ -55,17 +55,30 @@ export function getModelRoute(
 	return { ...modelRoutes.get(id) };
 }
 
-/** A native UID already selects reasoning; there is no adjustable wire effort. */
-function thinkingLevelMap(reasoning: boolean): NonNullable<ProviderChatModelConfig["thinkingLevelMap"]> {
-	return {
-		off: null,
-		minimal: null,
-		low: null,
-		medium: null,
-		high: reasoning ? "default" : null,
-		xhigh: null,
-		max: null,
+type ThinkingLevelMap = NonNullable<ProviderChatModelConfig["thinkingLevelMap"]>;
+type NativeThinkingLevel = Exclude<keyof ThinkingLevelMap, "off">;
+
+/** Match whole effort tokens, not substrings such as "highlander" or "maximum". */
+function nativeThinkingLevel(value: string): NativeThinkingLevel | undefined {
+	const tokens = value.toLowerCase().split(/[^a-z0-9]+/);
+	const levels = tokens.filter((token): token is NativeThinkingLevel =>
+		["minimal", "low", "medium", "high", "xhigh", "max"].includes(token));
+	const unique = [...new Set(levels)];
+	return unique.length === 1 ? unique[0] : undefined;
+}
+
+/** The sole Pi level describes the fixed native UID; it is not a wire option. */
+function thinkingLevelMap(reasoning: boolean, uid = "", label = ""): ThinkingLevelMap {
+	const map: ThinkingLevelMap = {
+		off: null, minimal: null, low: null, medium: null, high: null, xhigh: null, max: null,
 	};
+	if (reasoning) {
+		// UID wins over display labels. Unspecified effort keeps the legacy high
+		// placeholder because Pi has no "default/unknown" thinking level.
+		const level = nativeThinkingLevel(uid) ?? nativeThinkingLevel(label) ?? "high";
+		map[level] = "default";
+	}
+	return map;
 }
 
 /** Synchronous boot seed only. Discovery errors never silently return this. */
@@ -147,7 +160,7 @@ export function normalizeDevinModels(
 			api: "devin-native-connect",
 			baseUrl: baseUrl.replace(/\/+$/, ""),
 			reasoning,
-			thinkingLevelMap: thinkingLevelMap(reasoning),
+			thinkingLevelMap: thinkingLevelMap(reasoning, uid, config.label),
 			input: images ? ["text", "image"] : ["text"],
 			cost: modelCost(config),
 			contextWindow: config.maxTokens > 0 ? config.maxTokens : (info?.maxTokens ?? 0) > 0 ? info!.maxTokens : DEFAULT_CONTEXT_WINDOW,

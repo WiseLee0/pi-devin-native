@@ -63,7 +63,7 @@ pi -e /本项目的绝对路径/index.ts
 - Devin OAuth 登录、账号模型发现和 Connect/Protobuf 流式响应。
 - 文本、thinking/签名、工具调用及工具结果回传。
 - 按服务端能力声明处理图片；SWE-1.6 模型按纯文本处理。
-- 保留原生模型 UID 及不同 effort 变体；切换推理强度需选择对应模型，而不是通过 Pi thinking 档位调整服务端参数。
+- 保留原生模型 UID 及不同 effort 变体；Pi thinking 显示 UID 中的固定档位（minimal / low / medium / high / xhigh / max），UID 未标明时参考模型名称。未标明强度的推理模型暂沿用 high 占位，并不表示服务端实际为 high。切换推理强度需选择对应模型，而不是通过 Pi thinking 档位调整服务端参数。
 - 请求取消、超时和异常流检查。
 
 不支持 Native Fusion 编排、严格工具语法约束或订阅余额查询。费用信息来自服务端，**显示为 0 不代表免费**。

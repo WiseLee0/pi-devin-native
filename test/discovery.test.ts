@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { gzipSync } from "node:zlib";
+import { clampThinkingLevel, getSupportedThinkingLevels, type Api, type Model } from "@earendil-works/pi-ai/compat";
 import { FALLBACK_MODELS, fetchDevinModels, getModelRoute, normalizeDevinModels } from "../src/discovery.js";
 import { DEVIN_DEFAULT_BASE_URL } from "../src/devin.js";
 import {
@@ -143,7 +144,7 @@ test("normalization filters disabled/internal/no-tool configs but retains slots 
 	assert.equal(models[0].name, "First");
 });
 
-test("native effort UIDs are not collapsed; only a fixed high default is exposed for reasoning", () => {
+test("native effort UIDs stay separate and expose only their corresponding Pi level", () => {
 	const family = create(ModelFamilyMetadataSchema, { modelFamilyLabel: "GPT Test" });
 	const models = normalizeDevinModels([
 		config("gpt-test-low", { label: "GPT Test Low", modelFamilyMetadata: family, modelInfo: featureInfo({ supportsThinking: true }) }),
@@ -159,10 +160,48 @@ test("native effort UIDs are not collapsed; only a fixed high default is exposed
 		const reasoning = !["no-thinking", "authoritative"].includes(model.id);
 		assert.equal(model.reasoning, reasoning);
 		assert.deepEqual(model.thinkingLevelMap, {
-			off: null, minimal: null, low: null, medium: null, high: reasoning ? "default" : null, xhigh: null, max: null,
+			off: null, minimal: null, low: model.id === "gpt-test-low" ? "default" : null,
+			medium: null, high: reasoning && model.id !== "gpt-test-low" ? "default" : null, xhigh: null, max: null,
 		});
 		assert.equal(getModelRoute(model.id).requestModelId, undefined);
 	}
+});
+
+test("fixed effort display recognizes all native variants, prioritizes UID and respects capabilities", () => {
+	const cases = [
+		["claude-opus-5-5-medium-fast", "Claude Opus High", "medium"],
+		["gpt-minimal", "GPT", "minimal"],
+		["gpt-low-fast", "GPT", "low"],
+		["gpt-high", "GPT", "high"],
+		["gpt-xhigh-fast", "GPT", "xhigh"],
+		["claude-max", "Claude", "max"],
+		["opaque-uid", "Claude (Medium)", "medium"],
+		["gpt_MEDIUM_fast", "GPT", "medium"],
+		["highlander", "Maximum Thinking", "high"],
+		["ambiguous-low-high", "GPT Medium", "medium"],
+		["unspecified", "GPT Thinking", "high"],
+	] as const;
+	for (const [uid, label, level] of cases) {
+		const [model] = normalizeDevinModels([config(uid, {
+			label, modelInfo: featureInfo({ supportsThinking: true }),
+		})]);
+		assert.deepEqual(Object.entries(model.thinkingLevelMap!).filter(([, value]) => value !== null),
+			[[level, "default"]], uid);
+		assert.equal(model.id, uid);
+		assert.equal(getModelRoute(uid).requestModelId, undefined);
+		const runtimeModel = { ...model, provider: "devin" } as Model<Api>;
+		assert.deepEqual(getSupportedThinkingLevels(runtimeModel), [level]);
+		for (const requested of ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const) {
+			assert.equal(clampThinkingLevel(runtimeModel, requested), level, `${uid}: ${requested}`);
+		}
+		// Catalog round trips must retain the fixed level.
+		assert.deepEqual(JSON.parse(JSON.stringify(model)).thinkingLevelMap, model.thinkingLevelMap);
+	}
+	const [disabled] = normalizeDevinModels([config("gpt-medium", {
+		label: "GPT Medium", modelInfo: featureInfo({ supportsThinking: false }),
+	})]);
+	assert.equal(disabled.reasoning, false);
+	assert.deepEqual(Object.values(disabled.thinkingLevelMap!), Array(7).fill(null));
 });
 
 test("image capabilities honor features, except image-blind SWE-1.6 UIDs", () => {

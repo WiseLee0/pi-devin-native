@@ -63,7 +63,7 @@ Only installations without a cached catalog use the initial `swe-1-6` boot seed,
 - Devin OAuth login, account-specific model discovery, and Connect/Protobuf streaming.
 - Text, thinking/signatures, tool calls, and tool-result round trips.
 - Images according to declared server capabilities; SWE-1.6 models are treated as text-only.
-- Native model UIDs and effort variants remain separate. Change reasoning effort by selecting the corresponding model, not through Pi's thinking-level controls.
+- Native model UIDs and effort variants remain separate. Pi displays the fixed effort token from the UID (minimal / low / medium / high / xhigh / max), falling back to the model label. Reasoning models without an explicit effort retain the legacy high placeholder; it does not indicate actual server-side high effort. Change reasoning effort by selecting the corresponding model, not through Pi's thinking-level controls.
 - Cancellation, timeouts, and malformed-stream checks.
 
 Native Fusion orchestration, strict tool grammar constraints, and subscription-balance reporting are not supported. Cost metadata comes from the server; **a displayed zero does not mean free use**.
