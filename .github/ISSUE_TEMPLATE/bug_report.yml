@@ -1,0 +1,45 @@
+name: Bug report
+description: Report a reproducible problem without credentials or private project data.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include session tokens, JWTs, auth.json, private prompts, or raw authenticated request dumps.
+        Report suspected vulnerabilities privately using SECURITY.md, not this public form.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions and platform
+      description: Pi version, extension version, Node version, OS.
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Failure stage
+      options:
+        - OAuth login
+        - Model discovery
+        - Text streaming
+        - Tool calls / tool results
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Minimal reproduction
+      description: Include commands with credentials and private paths removed.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized error message
+      description: Prefer status codes and error summaries. Remove tokens, JWTs, prompts, and organization data.

@@ -1,0 +1,12 @@
+node_modules/
+.pi/
+.DS_Store
+*.tgz
+coverage/
+.env
+.env.*
+auth.json
+.npmrc
+*.log
+dist/
+.artifacts/

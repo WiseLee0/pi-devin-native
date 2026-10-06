@@ -1,0 +1,25 @@
+name: Release readiness (no publishing)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.2"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Validate tests, artifact, and publication metadata
+        run: npm run release:check
+        env:
+          PI_OFFLINE: "1"
+      # Publishing is intentionally manual. No NPM_TOKEN, OIDC, or npm publish step.
